@@ -985,8 +985,8 @@
         lang: 'en', rate: settings().rate
       }).then(function (result) {
         toast(result.ok
-          ? 'Voz reproduzida (' + (result.via === 'local' ? 'arquivo salvo' :
-              (result.via === 'google' || result.via === 'proxy' ? 'Google Tradutor' : 'navegador')) + ').'
+          ? 'Voz reproduzida (' +
+              (result.via === 'google' || result.via === 'proxy' ? 'Google Tradutor' : 'navegador') + ').'
           : 'Não foi possível reproduzir a voz.');
       });
     };

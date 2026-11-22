@@ -1,6 +1,6 @@
 /*
  * Smoke test da interface Android: carrega o index.html e os scripts reais num
- * DOM falso, com a bridge nativa simulada, e confere que o app inicia e salva.
+ * DOM falso, com a bridge nativa simulada, e confere backup, voz e atualização.
  */
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -12,8 +12,20 @@ const ROOT = path.join(__dirname, '..');
 const html = fs.readFileSync(path.join(ROOT, 'www', 'index.html'), 'utf8')
   .replace(/<script[\s\S]*?<\/script>/g, '');
 
+const RELEASE = {
+  tag_name: 'v1.1.0',
+  name: 'v1.1.0 — APK debug',
+  body: 'Voz sempre online e atualização direto do GitHub.',
+  assets: [{
+    name: 'anki-ingles-android.apk',
+    browser_download_url: 'https://github.com/ederproducer-stack/anki-ingles-android/releases/download/v1.1.0/anki-ingles-android.apk'
+  }]
+};
+
 function boot() {
   const files = new Map();
+  const downloads = [];
+  const settingsOpened = [];
   const native = {
     isNative: true,
     platform: 'android',
@@ -39,7 +51,15 @@ function boot() {
     Directory: { External: 'EXTERNAL' },
     Encoding: { UTF8: 'utf8' },
     CapacitorHttp: {
-      async get() { return { status: 200, data: Buffer.from('mp3').toString('base64') }; }
+      async get({ url }) {
+        if (url.includes('api.github.com')) return { status: 200, data: RELEASE };
+        return { status: 200, data: Buffer.from('mp3').toString('base64') };
+      }
+    },
+    AppUpdater: {
+      async getVersion() { return { version: '1.0.0', canInstall: true }; },
+      async downloadAndInstall({ url }) { downloads.push(url); return { ok: true }; },
+      async openInstallSettings() { settingsOpened.push(true); }
     }
   };
 
@@ -69,14 +89,17 @@ function boot() {
   window.fetch = async () => ({ ok: true, text: async () => 'conteudo', json: async () => ({}) });
   window.confirm = () => true;
 
-  const order = ['richtext.js', 'srs.js', 'deck.js', 'decks.js', 'backup.js', 'tts.js', 'app.js'];
+  const order = [
+    'richtext.js', 'srs.js', 'deck.js', 'decks.js', 'backup.js',
+    'tts.js', 'updater.js', 'app.js'
+  ];
   for (const name of order) {
     window.eval(fs.readFileSync(path.join(ROOT, 'www', name), 'utf8'));
   }
-  return { window, files, dom };
+  return { window, files, downloads, settingsOpened, dom };
 }
 
-const flush = () => new Promise((resolve) => setTimeout(resolve, 60));
+const flush = (ms = 60) => new Promise((resolve) => setTimeout(resolve, ms));
 
 test('o app inicia e mostra a pasta fixa do Android', async () => {
   const { window, dom } = boot();
@@ -88,7 +111,7 @@ test('o app inicia e mostra a pasta fixa do Android', async () => {
   dom.window.close();
 });
 
-test('Salvar agora grava na pasta definida pelo app', async () => {
+test('Salvar agora grava só o backup (sem MP3s)', async () => {
   const { window, files, dom } = boot();
   await flush();
   window.document.getElementById('btn-backup-save').click();
@@ -97,6 +120,7 @@ test('Salvar agora grava na pasta definida pelo app', async () => {
   const payload = JSON.parse(files.get('Anki/anki-ingles-backup.json'));
   assert.equal(payload.app, 'anki-ingles-android');
   assert.ok(payload.cards.length > 0);
+  assert.equal([...files.keys()].some((name) => name.endsWith('.mp3')), false);
   dom.window.close();
 });
 
@@ -104,10 +128,44 @@ test('os botões de escolher/mudar pasta ficam ocultos', async () => {
   const { window, dom } = boot();
   await flush();
   const choose = window.document.getElementById('btn-backup-folder');
-  const change = window.document.getElementById('btn-backup-change');
-  // O JS esconde "Escolher pasta"; "Mudar pasta" é escondido só no CSS Android.
   assert.equal(choose.classList.contains('hidden'), true);
   assert.ok(/display:\s*none/.test(fs.readFileSync(path.join(ROOT, 'www', 'style.css'), 'utf8')));
-  assert.ok(change);
+  dom.window.close();
+});
+
+test('a autoria aparece no rodapé com o repositório Android', () => {
+  const { window, dom } = boot();
+  const footer = window.document.querySelector('.app-footer');
+  assert.match(footer.textContent, /Eder Oliveira/);
+  assert.match(footer.querySelector('a[href^="mailto:"]').getAttribute('href'), /ederproducer@gmail.com/);
+  assert.match(footer.querySelector('a[href^="https://github.com/"]').getAttribute('href'), /anki-ingles-android$/);
+  dom.window.close();
+});
+
+test('verifica atualização no GitHub e baixa o APK', async () => {
+  const { window, downloads, dom } = boot();
+  await flush(80);
+  assert.match(window.document.getElementById('update-status').textContent, /Versão instalada: 1\.0\.0/);
+
+  window.document.getElementById('btn-update-app').click();
+  await flush(80);
+  const modal = window.document.getElementById('modal-root').textContent;
+  assert.match(modal, /Nova versão disponível/);
+  assert.match(modal, /1\.1\.0/);
+  assert.match(modal, /Voz sempre online/);
+
+  window.document.getElementById('update-go').click();
+  await flush(80);
+  assert.equal(downloads.length, 1);
+  assert.match(downloads[0], /anki-ingles-android\.apk$/);
+  dom.window.close();
+});
+
+test('comparação de versões respeita números (1.10 > 1.9)', () => {
+  const { window, dom } = boot();
+  const cmp = window.AppUpdaterUI.compareVersions;
+  assert.equal(cmp('1.10.0', '1.9.0'), 1);
+  assert.equal(cmp('v1.1.0', '1.1.0'), 0);
+  assert.equal(cmp('1.0.0', '1.1.0'), -1);
   dom.window.close();
 });

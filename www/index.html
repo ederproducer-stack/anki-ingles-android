@@ -176,14 +176,14 @@
         <div class="setting backup-setting">
           <div>
             <strong>Pasta de backup</strong>
-            <small>Neste app a pasta é definida pelo aplicativo, não pelo usuário: <code>Armazenamento interno/Android/data/com.ederproducer.ankiingles/files/Anki</code>. Não há seletor de pasta. Lá ficam os cartões, configurações, estatísticas, uma cópia dos arquivos do app e o MP3 de cada frase em <code>audio/</code>.</small>
+            <small>Neste app a pasta é definida pelo aplicativo, não pelo usuário: <code>Armazenamento interno/Android/data/com.ederproducer.ankiingles/files/Anki</code>. Não há seletor de pasta. Lá ficam apenas os cartões, configurações, estatísticas e uma cópia dos arquivos do app. Os áudios de voz <strong>não são salvos no aparelho</strong> — a voz é sempre online.</small>
             <small id="backup-status">Preparando pasta de backup...</small>
             <div class="row wrap" id="backup-actions">
               <button id="btn-backup-folder" class="btn btn-primary">Escolher pasta</button>
               <button id="btn-backup-change" class="btn btn-ghost hidden">Mudar pasta</button>
               <button id="btn-backup-save" class="btn btn-ghost">Salvar agora</button>
               <button id="btn-backup-restore" class="btn btn-ghost">Restaurar</button>
-              <button id="btn-backup-download" class="btn btn-ghost hidden">Baixar backup (ZIP com áudios)</button>
+              <button id="btn-backup-download" class="btn btn-ghost hidden">Baixar backup (ZIP)</button>
               <input type="file" id="backup-file" accept="application/json,.json" class="hidden" />
             </div>
           </div>
@@ -191,7 +191,7 @@
 
         <label class="setting" id="backup-auto-row">
           <input type="checkbox" id="set-auto-backup" />
-          <span><strong>Salvar backup e áudios automaticamente</strong><small>Atualiza o JSON e os MP3s no destino de backup após cada alteração. Com os áudios salvos, o app funciona offline.</small></span>
+          <span><strong>Salvar backup automaticamente</strong><small>Atualiza o JSON e a cópia dos arquivos do app após cada alteração. A voz não é gravada: é sempre buscada online.</small></span>
         </label>
 
         <div class="setting">
@@ -208,9 +208,25 @@
           </div>
           <button id="btn-reset" class="btn btn-danger">Restaurar</button>
         </div>
+
+        <div class="setting">
+          <div>
+            <strong>Atualizar do GitHub</strong>
+            <small id="update-status">Baixa as novidades publicadas no repositório do app.</small>
+            <small>Seus cartões, estatísticas e backup não são alterados.</small>
+            <div class="row wrap" style="margin-top:12px">
+              <button id="btn-update-app" class="btn btn-primary">Verificar atualizações</button>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   </main>
+
+  <footer class="app-footer">
+    Criado por <a href="mailto:ederproducer@gmail.com">Eder Oliveira</a> ·
+    <a href="https://github.com/ederproducer-stack/anki-ingles-android" target="_blank" rel="noopener">código no GitHub</a>
+  </footer>
 
   <div id="toast" class="toast" aria-live="polite"></div>
   <div id="modal-root"></div>
@@ -222,6 +238,7 @@
   <script src="deck.js"></script>
   <script src="decks.js"></script>
   <script src="backup.js"></script>
+  <script src="updater.js"></script>
   <script src="theme-sync.js"></script>
   <script src="app.js"></script>
 </body>

@@ -1,6 +1,6 @@
 /*
  * Testes do backup Android com a bridge nativa falsificada.
- * Validam o comportamento sem precisar de emulador ou Android SDK.
+ * O áudio de TTS nunca é gravado: estes testes garantem isso.
  */
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -14,6 +14,7 @@ const CODE = fs.readFileSync(
 
 function makeFakeNative() {
   const files = new Map();
+  const requests = [];
   const Filesystem = {
     async mkdir() {},
     async writeFile({ path: filePath, data }) { files.set(filePath, data); },
@@ -36,7 +37,8 @@ function makeFakeNative() {
     }
   };
   const CapacitorHttp = {
-    async get() {
+    async get(options) {
+      requests.push(options.url);
       return { status: 200, data: Buffer.from('mp3-falso').toString('base64') };
     }
   };
@@ -49,7 +51,8 @@ function makeFakeNative() {
       Encoding: { UTF8: 'utf8' },
       CapacitorHttp
     },
-    files
+    files,
+    requests
   };
 }
 
@@ -89,6 +92,7 @@ test('a pasta é definida pelo app e exposta no status', async () => {
     '/storage/emulated/0/Android/data/com.ederproducer.ankiingles/files/Anki'
   );
   assert.equal(status.native, true);
+  assert.equal(status.audioOnlineOnly, true);
 });
 
 test('não há escolha nem mudança de pasta pelo usuário', async () => {
@@ -99,7 +103,7 @@ test('não há escolha nem mudança de pasta pelo usuário', async () => {
   await assert.rejects(backup.moveBrowserFolder(), /não pode ser alterada/);
 });
 
-test('saveToServer grava JSON, arquivos do app e MP3s na pasta do app', async () => {
+test('saveToServer grava JSON e arquivos do app, sem MP3s', async () => {
   const { native, files } = makeFakeNative();
   const backup = loadBackup(native);
   await backup.init();
@@ -107,27 +111,35 @@ test('saveToServer grava JSON, arquivos do app e MP3s na pasta do app', async ()
   const result = await backup.saveToServer(sampleState());
   assert.equal(result.ok, true);
 
-  const raw = files.get('Anki/anki-ingles-backup.json');
-  const payload = JSON.parse(raw);
+  const payload = JSON.parse(files.get('Anki/anki-ingles-backup.json'));
   assert.equal(payload.app, 'anki-ingles-android');
   assert.equal(payload.deckId, 'deck-1');
   assert.equal(payload.cards.length, 2);
   assert.equal(files.has('Anki/app/index.html'), true);
-  assert.equal(files.has('Anki/audio/hello_world_' + backup.audioFileName('Hello world').split('_').pop()), true);
-  assert.equal(backup.getStatus().audioCount, 2);
+  assert.equal([...files.keys()].some((name) => name.includes('/audio/')), false);
+  assert.equal([...files.keys()].some((name) => name.endsWith('.mp3')), false);
+  assert.equal(backup.getStatus().audioCount, 0);
   assert.ok(backup.getStatus().lastSaved instanceof Date);
 });
 
-test('getAudio devolve um Blob com o MP3 salvo', async () => {
-  const { native } = makeFakeNative();
+test('nenhum áudio é salvo no dispositivo', async () => {
+  const { native, files } = makeFakeNative();
   const backup = loadBackup(native);
   await backup.init();
-  await backup.saveToServer(sampleState());
+  assert.equal(await backup.saveAudios(sampleState()), 0);
+  assert.equal(await backup.getAudio('Good morning'), null);
+  assert.equal(await backup.countAudios(sampleState()), 0);
+  assert.equal(files.size, 0);
+});
 
-  const blob = await backup.getAudio('Good morning');
+test('fetchAudioBlob busca o MP3 online sem gravar arquivo', async () => {
+  const { native, files, requests } = makeFakeNative();
+  const backup = loadBackup(native);
+  const blob = await backup.fetchAudioBlob('Hello world');
   assert.ok(blob instanceof Blob);
   assert.equal(Buffer.from(await blob.arrayBuffer()).toString(), 'mp3-falso');
-  assert.equal(await backup.getAudio('frase inexistente'), null);
+  assert.match(requests[0], /translate\.google\.com\/translate_tts/);
+  assert.equal(files.size, 0);
 });
 
 test('audioFileName é estável e igual ao da versão web', () => {

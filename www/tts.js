@@ -1,8 +1,11 @@
 /*
- * Texto para fala na versão Android, em três tentativas:
- * 1) MP3 salvo pelo Backup na pasta definida pelo app (funciona offline).
- * 2) Google Tradutor via CapacitorHttp (HTTP nativo, sem problema de CORS no WebView).
- * 3) Web Speech API como última reserva.
+ * Texto para fala na versão Android — SEM gravação de áudio no aparelho.
+ *
+ * 1) Google Tradutor via CapacitorHttp (HTTP nativo, sem CORS no WebView).
+ * 2) Web Speech API do navegador como última reserva.
+ *
+ * O MP3 nunca é salvo: o blob tocado vive só na memória. Assim o app não ocupa
+ * espaço com áudios e sempre usa a versão mais recente do serviço de voz.
  */
 (function (global) {
   'use strict';
@@ -72,12 +75,11 @@
 
   /*
    * Fala o texto. Retorna Promise<{ ok, via }>, onde via é
-   * 'local' | 'google' | 'speech' | 'blocked' | 'none' | 'timeout' | 'stopped'.
+   * 'google' | 'speech' | 'blocked' | 'none' | 'timeout' | 'stopped'.
    */
   function speak(text, opts) {
     if (!text) return Promise.resolve({ ok: false, via: 'none' });
     opts = opts || {};
-    var lang = opts.lang || 'en';
     var rate = opts.rate || 1;
 
     stop();
@@ -93,10 +95,7 @@
         if (timer) clearTimeout(timer);
         if (activeResolve) activeResolve = null;
         revokeObjectUrl();
-        resolve({
-          ok: via === 'local' || via === 'google' || via === 'speech',
-          via: via
-        });
+        resolve({ ok: via === 'google' || via === 'speech', via: via });
       }
 
       activeResolve = function (result) {
@@ -113,7 +112,6 @@
 
       function playBlob(blob, via, onFailure) {
         if (myToken !== token || !blob) return onFailure();
-        // Uma tentativa mais rápida (arquivo local) já começou a tocar.
         if (audio) return;
         try {
           activeObjectUrl = URL.createObjectURL(blob);
@@ -138,25 +136,6 @@
         }
       }
 
-      function tryLocal(onFailure) {
-        if (myToken !== token || !global.Backup || !global.Backup.getAudio) {
-          setTimeout(onFailure, 0);
-          return;
-        }
-        var result;
-        try { result = global.Backup.getAudio(text); }
-        catch (err) { setTimeout(onFailure, 0); return; }
-        if (!result || typeof result.then !== 'function') { setTimeout(onFailure, 0); return; }
-        result.then(function (blob) {
-          if (myToken !== token) return;
-          playBlob(blob, 'local', onFailure);
-        }).catch(function () { if (myToken === token) onFailure(); });
-        // Rede de segurança: se o plugin não responder, segue para a rede.
-        setTimeout(function () {
-          if (myToken === token && !audio) onFailure();
-        }, 800);
-      }
-
       function tryGoogle() {
         if (myToken !== token) return;
         if (!global.Backup || !global.Backup.fetchAudioBlob) return tryBrowser();
@@ -170,8 +149,8 @@
         }).catch(function () { if (myToken === token) tryBrowser(); });
       }
 
-      // Ordem: arquivo salvo no app (offline) → Google via HTTP nativo → voz do navegador.
-      tryLocal(tryGoogle);
+      // A voz é sempre online: Google Tradutor → voz do navegador.
+      tryGoogle();
       timer = setTimeout(function () { finish('timeout'); }, Math.max(9000, text.length * 200));
     });
   }

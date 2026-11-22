@@ -1,33 +1,32 @@
 /*
  * Backup da versão Android.
  *
- * Diferente da versão web, o usuário NÃO escolhe a pasta: o app define sozinho
+ * A pasta é definida pelo app:
  * /storage/emulated/0/Android/data/com.ederproducer.ankiingles/files/Anki
- * (Directory.External do Capacitor). Não precisa de permissão de armazenamento
- * e a pasta aparece no gerenciador de arquivos em Android/data/<pacote>/files.
+ * (Directory.External do Capacitor). Não precisa de permissão de armazenamento.
  *
- * A API pública é a mesma do backup.js da versão web, para app.js continuar
- * funcionando sem conhecer o Android.
+ * Os MP3s de TTS NÃO são gravados no dispositivo: a voz sempre vem da rede
+ * (Google Tradutor via CapacitorHttp, com fallback para a voz do navegador).
+ * Assim o backup ocupa pouco espaço: só o JSON e uma cópia dos arquivos do app.
+ *
+ * A API pública continua igual à do backup da versão web, para app.js funcionar.
  */
 (function (global) {
   'use strict';
 
   var BACKUP_FILE = 'anki-ingles-backup.json';
   var BASE_DIR = 'Anki';
-  var AUDIO_DIR = BASE_DIR + '/audio';
   var APP_DIR = BASE_DIR + '/app';
   var FALLBACK_PATH = 'Armazenamento interno/Android/data/com.ederproducer.ankiingles/files/Anki';
   var SOURCE_FILES = [
     'index.html', 'style.css', 'theme.css', 'theme-meta.json',
     'app.js', 'srs.js', 'tts.js', 'richtext.js', 'deck.js', 'decks.js', 'backup.js',
-    'theme-sync.js', 'native-bundle.js',
+    'theme-sync.js', 'updater.js', 'native-bundle.js', 'version.json',
     'favicon.svg', 'favicon.png', 'favicon.ico'
   ];
 
   var resolvedPath = null;
   var lastSaved = null;
-  var lastAudioSync = null;
-  var audioCount = 0;
   var debounceTimer = null;
 
   /* -------------------- bridge nativa -------------------- */
@@ -43,7 +42,7 @@
   function ensureDirs() {
     var n = native();
     if (!n) return Promise.resolve(false);
-    return Promise.all([BASE_DIR, AUDIO_DIR, APP_DIR].map(function (path) {
+    return Promise.all([BASE_DIR, APP_DIR].map(function (path) {
       return n.Filesystem.mkdir({ path: path, directory: directory(n), recursive: true })
         .catch(function () { /* já existe */ });
     })).then(function () { return true; });
@@ -58,9 +57,7 @@
 
   function writeBase64(path, base64) {
     var n = native();
-    return n.Filesystem.writeFile({
-      path: path, directory: directory(n), data: base64
-    });
+    return n.Filesystem.writeFile({ path: path, directory: directory(n), data: base64 });
   }
 
   function readText(path) {
@@ -68,12 +65,6 @@
     return n.Filesystem.readFile({
       path: path, directory: directory(n), encoding: utf8(n)
     }).then(function (r) { return r.data; });
-  }
-
-  function readBase64(path) {
-    var n = native();
-    return n.Filesystem.readFile({ path: path, directory: directory(n) })
-      .then(function (r) { return r.data; });
   }
 
   /* -------------------- base64 / binário -------------------- */
@@ -129,20 +120,22 @@
       encodeURIComponent(text);
   }
 
-  /* Busca o MP3 pelo HTTP nativo (ignora CORS) com fallback para fetch. */
-  function fetchAudio(text) {
+  /* Busca o MP3 pelo HTTP nativo (ignora CORS); nada é salvo no aparelho. */
+  function fetchAudioBlob(text) {
     var n = native();
     if (n && n.CapacitorHttp) {
       return n.CapacitorHttp.get({ url: googleUrl(text), responseType: 'arraybuffer' })
         .then(function (res) {
           if (res.status < 200 || res.status >= 300) throw new Error('HTTP ' + res.status);
           return responseToBase64(res.data);
+        }).then(function (base64) {
+          return new Blob([base64ToBytes(base64)], { type: 'audio/mpeg' });
         });
     }
     return fetch(googleUrl(text)).then(function (res) {
       if (!res.ok) throw new Error('HTTP ' + res.status);
       return res.blob();
-    }).then(blobToBase64);
+    });
   }
 
   /* -------------------- payload / nomes -------------------- */
@@ -170,7 +163,7 @@
     return texts;
   }
 
-  /* Nome estável por frase: slug + hash FNV-1a (igual ao da versão web). */
+  /* Nome estável por frase, mantido para compatibilidade com backups antigos. */
   function audioFileName(text) {
     var hash = 2166136261;
     for (var i = 0; i < text.length; i++) {
@@ -212,60 +205,12 @@
     return Promise.all(workers).then(function () { return results; });
   }
 
-  /* -------------------- áudios -------------------- */
+  /* -------------------- áudios: somente online -------------------- */
 
-  function countAudios(state) {
-    var n = native();
-    if (!n) return Promise.resolve(0);
-    return n.Filesystem.readdir({ path: AUDIO_DIR, directory: directory(n) })
-      .then(function (r) {
-        var names = {};
-        (state && state.cards || []).forEach(function (c) {
-          if (c && c.front) names[audioFileName(c.front)] = true;
-        });
-        var files = (r.files || []).filter(function (f) { return !f.directory && /\.mp3$/i.test(f.name); });
-        audioCount = state ? files.filter(function (f) { return names[f.name]; }).length : files.length;
-        return audioCount;
-      }).catch(function () { audioCount = 0; return 0; });
-  }
-
-  function saveAudios(state, opts) {
-    opts = opts || {};
-    var texts = uniqueFronts(state);
-    var pending = texts.map(function (text) { return { text: text, name: audioFileName(text) }; });
-
-    function missing() {
-      if (!opts.onlyMissing) return Promise.resolve(pending);
-      var n = native();
-      if (!n) return Promise.resolve(pending);
-      return n.Filesystem.readdir({ path: AUDIO_DIR, directory: directory(n) })
-        .then(function (r) {
-          var exist = {};
-          (r.files || []).forEach(function (f) { exist[f.name] = true; });
-          return pending.filter(function (item) { return !exist[item.name]; });
-        }).catch(function () { return pending; });
-    }
-
-    return ensureDirs().then(missing).then(function (list) {
-      return mapLimit(list, 3, function (item) {
-        return fetchAudio(item.text).then(function (base64) {
-          return writeBase64(AUDIO_DIR + '/' + item.name, base64);
-        });
-      });
-    }).then(function () {
-      lastAudioSync = new Date();
-      return countAudios(state).then(function () { return texts.length; });
-    });
-  }
-
-  /* Blob para o tts.js tocar o MP3 salvo, sem depender de file://. */
-  function getAudio(text) {
-    if (!text || !native()) return Promise.resolve(null);
-    return readBase64(AUDIO_DIR + '/' + audioFileName(text))
-      .then(function (base64) {
-        return new Blob([base64ToBytes(base64)], { type: 'audio/mpeg' });
-      }).catch(function () { return null; });
-  }
+  // Mantidos para a interface não quebrar; não gravam nada no dispositivo.
+  function saveAudios() { return Promise.resolve(0); }
+  function getAudio() { return Promise.resolve(null); }
+  function countAudios() { return Promise.resolve(0); }
 
   /* -------------------- escrita do backup -------------------- */
 
@@ -289,19 +234,13 @@
       if (!includeApp) return;
       return copyAppFiles();
     }).then(function () {
-      return saveAudios(state, { onlyMissing: true });
-    }).then(function () {
-      return countAudios(state);
-    }).then(function () {
       lastSaved = new Date();
       return { ok: true, path: resolvedPath || FALLBACK_PATH };
     });
   }
 
   /* Mesma assinatura do servidor da versão web: app.js usa para salvar tudo. */
-  function saveToServer(state) {
-    return saveNow(state, true);
-  }
+  function saveToServer(state) { return saveNow(state, true); }
 
   function onChange(state) {
     if (!state || !state.settings || !state.settings.autoBackup) return;
@@ -319,11 +258,10 @@
 
   function clearDir() {
     if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null; }
-    audioCount = 0;
     return Promise.resolve(false);
   }
 
-  /* -------------------- ZIP (por compatibilidade; botão fica oculto) -------------------- */
+  /* -------------------- ZIP (JSON + arquivos do app) -------------------- */
 
   var CRC_TABLE = (function () {
     var table = new Uint32Array(256);
@@ -393,20 +331,18 @@
   function download(state) {
     var encoder = new TextEncoder();
     var files = [{ name: BACKUP_FILE, data: encoder.encode(JSON.stringify(buildPayload(state), null, 2)) }];
-    return mapLimit(uniqueFronts(state), 8, function (text) {
-      return getAudio(text).then(function (blob) {
-        if (!blob) return null;
-        return blob.arrayBuffer().then(function (buf) {
-          files.push({ name: 'audio/' + audioFileName(text), data: new Uint8Array(buf) });
-        });
-      });
+    return mapLimit(SOURCE_FILES, 4, function (name) {
+      return fetch('./' + name).then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.text();
+      }).then(function (text) {
+        files.push({ name: 'app/' + name, data: encoder.encode(text) });
+      }).catch(function () { return null; });
     }).then(function () {
       return makeZip(files).arrayBuffer().then(function (buffer) {
         return writeBase64(BASE_DIR + '/anki-ingles-backup.zip', bytesToBase64(new Uint8Array(buffer)));
       });
-    }).then(function () {
-      return files.filter(function (f) { return f.name.indexOf('audio/') === 0; }).length;
-    }).catch(function () { return 0; });
+    }).then(function () { return 0; });
   }
 
   /* -------------------- status / init -------------------- */
@@ -420,8 +356,9 @@
       // app.js usa serverPath para mostrar o caminho fixo e esconder "Escolher pasta".
       serverPath: resolvedPath || FALLBACK_PATH,
       lastSaved: lastSaved,
-      audioCount: audioCount,
-      lastAudioSync: lastAudioSync
+      audioCount: 0,
+      lastAudioSync: null,
+      audioOnlineOnly: true
     };
   }
 
@@ -451,11 +388,7 @@
     readFromFolder: readFromFolder,
     parse: parse,
     audioFileName: audioFileName,
-    fetchAudioBlob: function (text) {
-      return fetchAudio(text).then(function (base64) {
-        return new Blob([base64ToBytes(base64)], { type: 'audio/mpeg' });
-      });
-    },
+    fetchAudioBlob: fetchAudioBlob,
     download: download,
     makeZip: makeZip,
     googleUrl: googleUrl,

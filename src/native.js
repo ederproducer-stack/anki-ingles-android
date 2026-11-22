@@ -3,8 +3,11 @@
  * O esbuild empacota este arquivo em www/native-bundle.js e expõe tudo em
  * window.AndroidNative, para backup.js e tts.js não precisarem de import/export.
  */
-import { Capacitor, CapacitorHttp } from '@capacitor/core';
+import { Capacitor, CapacitorHttp, registerPlugin } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+
+// Plugin nativo deste projeto (baixa e instala o APK de um GitHub Release).
+const AppUpdater = registerPlugin('AppUpdater');
 
 window.AndroidNative = {
   isNative: Capacitor.isNativePlatform(),
@@ -12,5 +15,6 @@ window.AndroidNative = {
   Filesystem: Filesystem,
   Directory: Directory,
   Encoding: Encoding,
-  CapacitorHttp: CapacitorHttp
+  CapacitorHttp: CapacitorHttp,
+  AppUpdater: AppUpdater
 };

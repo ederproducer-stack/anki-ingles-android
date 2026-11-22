@@ -1177,13 +1177,15 @@
   f();
 
   // src/native.js
+  var AppUpdater = registerPlugin("AppUpdater");
   window.AndroidNative = {
     isNative: Capacitor.isNativePlatform(),
     platform: Capacitor.getPlatform(),
     Filesystem,
     Directory,
     Encoding,
-    CapacitorHttp
+    CapacitorHttp,
+    AppUpdater
   };
 })();
 /*! Bundled license information:
