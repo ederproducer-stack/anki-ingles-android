@@ -147,6 +147,9 @@ test('verifica atualização no GitHub e baixa o APK', async () => {
   assert.match(css, /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
   assert.match(css, /display:\s*flex;\s*align-items:\s*center/);
   assert.match(css, /max-width:\s*560px/);
+  assert.match(css, /width:\s*100%;\s*min-width:\s*0/);
+  assert.match(css, /\.setting small, \.setting code, code \{ overflow-wrap: anywhere/);
+  assert.match(css, /\.tabs \{ flex-wrap: wrap; min-width: 0/);
   const { window, downloads, dom } = boot();
   await flush(80);
   assert.match(window.document.getElementById('update-status').textContent, /Versão instalada: 1\.0\.0/);

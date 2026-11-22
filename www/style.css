@@ -256,7 +256,7 @@ h3 { margin: 28px 0 12px; font-size: 16px; }
 }
 .modal {
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-  width: 100%; max-width: 560px; max-height: 90vh; overflow: auto;
+  width: 100%; min-width: 0; max-width: 560px; max-height: 90vh; overflow: auto;
   padding: 24px; box-shadow: 0 24px 60px rgba(0,0,0,.3);
 }
 .modal h2 { margin-bottom: 18px; }
@@ -318,11 +318,12 @@ html { -webkit-text-size-adjust: 100%; }
 body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
 
 @media (max-width: 700px) {
-  .topbar { flex-direction: column; align-items: stretch; gap: 10px; }
+  .topbar { flex-direction: column; align-items: stretch; gap: 10px; min-width: 0; }
   .topbar .brand { justify-content: center; }
   .deck-switcher select { width: 100%; }
-  .tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .tabs .tab { flex: 1 0 auto; padding: 10px 14px; }
+  /* nowrap aqui forçava um viewport de ~405px e estourava os modais fixos. */
+  .tabs { flex-wrap: wrap; min-width: 0; }
+  .tabs .tab { flex: 1 1 auto; padding: 10px 14px; }
   .setting { flex-direction: column; align-items: stretch; }
   .setting > span:has(small) { flex: none; }
   #backup-status { overflow-wrap: anywhere; }
@@ -334,7 +335,7 @@ body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-are
 }
 
 /* ---------- Atualização do GitHub ---------- */
-.update-card { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 8px 0 18px; }
+.update-card { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 8px 0 18px; min-width: 0; }
 .update-card div { min-width: 0; }
 .update-card span { overflow-wrap: anywhere; }
 .update-card div {
@@ -356,3 +357,8 @@ body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-are
 .app-footer { text-align: center; padding: 20px 16px 32px; font-size: 12px; color: var(--muted); }
 .app-footer a { color: var(--primary); text-decoration: none; }
 .app-footer a:hover { text-decoration: underline; }
+
+/* Caminhos longos (como o da pasta de backup) não podem alargar o viewport:
+   isso faria o overlay position:fixed estourar a largura da tela. */
+html, body { max-width: 100%; }
+.setting small, .setting code, code { overflow-wrap: anywhere; word-break: break-word; }

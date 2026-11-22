@@ -7,7 +7,7 @@ Versão **Android** do Anki Inglês. Este é um projeto **separado** da versão 
 (`ederproducer-stack/anki-ingles`): o app original continua rodando normalmente
 no desktop e **não é modificado por aqui**.
 
-APK debug pronto: [v1.1.3](https://github.com/ederproducer-stack/anki-ingles-android/releases/tag/v1.1.3).
+APK debug pronto: [v1.1.6](https://github.com/ederproducer-stack/anki-ingles-android/releases/tag/v1.1.6).
 Código: https://github.com/ederproducer-stack/anki-ingles-android
 
 O webapp (HTML/CSS/JS) é empacotado num WebView com **Capacitor 8**. A camada
@@ -92,6 +92,29 @@ ANDROID_BUILD_IMAGE=anki-ingles-android-builder npm run build:apk
 Se preferir buildar sem Docker, abra `android/` no Android Studio e rode
 `./gradlew assembleDebug` com `ANDROID_HOME` apontando para seu SDK.
 
+## Testando no emulador
+
+Há um emulador headless mínimo em `scripts/emulator/`, montado apenas com
+componentes oficiais do Android SDK (sem imagem de terceiros, sem VNC e sem
+portas expostas). Ele recebe somente `/dev/kvm` e roda sem `--privileged`:
+
+```bash
+bash scripts/emulator/run.sh
+
+docker exec anki-emu bash -lc 'adb wait-for-device shell \
+  "while [ \"\$(getprop sys.boot_completed)\" != 1 ]; do sleep 2; done"; echo BOOT_OK'
+
+docker exec anki-emu adb install -r /dist/anki-ingles-android.apk
+docker exec anki-emu adb shell monkey -p com.ederproducer.ankiingles \
+  -c android.intent.category.LAUNCHER 1
+docker exec anki-emu adb exec-out screencap -p > /tmp/screen.png
+```
+
+Para testar o atualizador ponta a ponta, instale uma versão anterior, permita a
+instalação de fontes desconhecidas
+(`adb shell appops set com.ederproducer.ankiingles REQUEST_INSTALL_PACKAGES allow`)
+e toque em **Verificar atualizações**.
+
 ### Detalhes técnicos
 
 - `src/native.js` é empacotado pelo esbuild em `www/native-bundle.js` e expõe
@@ -120,6 +143,7 @@ android/                    projeto nativo gerado pelo Capacitor
 scripts/bundle-native.js    empacota a ponte nativa
 scripts/generate-assets.sh  ícone e splash
 scripts/build-apk.sh        build do APK via Docker
+scripts/emulator/           emulador headless isolado para testes
 tests/backup.test.js        testes do backup (sem áudio em disco)
 tests/ui.test.js            testes da interface e da atualização
 ```
