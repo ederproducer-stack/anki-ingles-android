@@ -7,7 +7,7 @@ Versão **Android** do Anki Inglês. Este é um projeto **separado** da versão 
 (`ederproducer-stack/anki-ingles`): o app original continua rodando normalmente
 no desktop e **não é modificado por aqui**.
 
-APK debug pronto: [v1.1.2](https://github.com/ederproducer-stack/anki-ingles-android/releases/tag/v1.1.2).
+APK debug pronto: [v1.1.3](https://github.com/ederproducer-stack/anki-ingles-android/releases/tag/v1.1.3).
 Código: https://github.com/ederproducer-stack/anki-ingles-android
 
 O webapp (HTML/CSS/JS) é empacotado num WebView com **Capacitor 8**. A camada

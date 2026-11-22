@@ -145,6 +145,8 @@ test('a autoria aparece no rodapé com o repositório Android', () => {
 test('verifica atualização no GitHub e baixa o APK', async () => {
   const css = fs.readFileSync(path.join(ROOT, 'www', 'style.css'), 'utf8');
   assert.match(css, /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(css, /display:\s*flex;\s*align-items:\s*center/);
+  assert.match(css, /max-width:\s*560px/);
   const { window, downloads, dom } = boot();
   await flush(80);
   assert.match(window.document.getElementById('update-status').textContent, /Versão instalada: 1\.0\.0/);
