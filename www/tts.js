@@ -113,6 +113,8 @@
 
       function playBlob(blob, via, onFailure) {
         if (myToken !== token || !blob) return onFailure();
+        // Uma tentativa mais rápida (arquivo local) já começou a tocar.
+        if (audio) return;
         try {
           activeObjectUrl = URL.createObjectURL(blob);
           var a = new Audio();
