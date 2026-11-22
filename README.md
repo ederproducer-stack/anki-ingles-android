@@ -56,6 +56,14 @@ adb install -r dist/anki-ingles-android.apk
 Para gerar ícone/splash novamente: `bash scripts/generate-assets.sh`
 (requer ImageMagick 7 / `magick`).
 
+Se preferir uma imagem menor que o `mingc/android-build-box`, há um `Dockerfile`
+com JDK 21 + Android SDK 36:
+
+```bash
+docker build -t anki-ingles-android-builder .
+ANDROID_BUILD_IMAGE=anki-ingles-android-builder npm run build:apk
+```
+
 Se preferir buildar sem Docker, abra `android/` no Android Studio e rode
 `./gradlew assembleDebug` com `ANDROID_HOME` apontando para seu SDK.
 
