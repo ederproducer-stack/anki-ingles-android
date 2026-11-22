@@ -42,7 +42,7 @@ ficar instalado na máquina) e `adb` para instalar no celular.
 
 ```bash
 npm install
-npm test              # testes do backup com a bridge nativa falsificada
+npm test              # testes do backup e da interface com a bridge nativa falsificada
 npm run bundle        # gera www/native-bundle.js
 npm run sync          # bundle + cap sync android
 
