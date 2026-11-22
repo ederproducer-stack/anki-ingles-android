@@ -1,0 +1,16 @@
+{
+  "appId": "com.ederproducer.ankiingles",
+  "appName": "Anki Inglês",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "mediaPlaybackRequiresUserAction": false,
+    "allowMixedContent": false,
+    "captureInput": false
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}

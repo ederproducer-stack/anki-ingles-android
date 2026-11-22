@@ -1,0 +1,24 @@
+{
+  "name": "anki-ingles-android",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Versão Android do Anki Inglês, empacotada com Capacitor",
+  "scripts": {
+    "bundle": "node scripts/bundle-native.js",
+    "sync": "npm run bundle && cap sync android",
+    "build:apk": "bash scripts/build-apk.sh",
+    "test": "node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.6.2",
+    "@capacitor/core": "8.6.2",
+    "@capacitor/filesystem": "8.1.5"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.6.2",
+    "esbuild": "^0.25.0"
+  },
+  "allowScripts": {
+    "esbuild@0.25.12": true
+  }
+}

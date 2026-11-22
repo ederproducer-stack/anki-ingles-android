@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Anki Inglês</string>
+    <string name="title_activity_main">Anki Inglês</string>
+    <string name="package_name">com.ederproducer.ankiingles</string>
+    <string name="custom_url_scheme">com.ederproducer.ankiingles</string>
+</resources>

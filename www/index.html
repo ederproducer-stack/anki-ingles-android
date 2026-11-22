@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anki Inglês — Flashcards com voz americana</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="alternate icon" type="image/png" sizes="64x64" href="favicon.png" />
+  <link rel="shortcut icon" href="favicon.ico" />
+  <link rel="stylesheet" href="style.css" />
+  <!-- Cores do tema atual do Omarchy (gerado pelo hook theme-set). -->
+  <link id="app-theme" rel="stylesheet" href="theme.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">A</span>
+      <div>
+        <h1>Anki Inglês</h1>
+        <p>Frases em inglês com voz dos EUA</p>
+      </div>
+    </div>
+    <div class="deck-switcher">
+      <select id="deck-select" class="input" aria-label="Deck ativo"></select>
+    </div>
+    <nav class="tabs" aria-label="Navegação principal">
+      <button class="tab active" data-screen="study">Revisar</button>
+      <button class="tab" data-screen="cards">Cartões</button>
+      <button class="tab" data-screen="stats">Estatísticas</button>
+      <button class="tab" data-screen="settings">Configurações</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ===================== REVISAR ===================== -->
+    <section id="screen-study" class="screen active">
+      <div class="study-head">
+        <div>
+          <div id="study-title" class="study-title">Sessão de revisão</div>
+          <div id="study-sub" class="muted">...</div>
+        </div>
+        <div class="row">
+          <button id="btn-free" class="btn btn-ghost" title="Praticar todos os cartões, ignorando as datas">Modo livre</button>
+          <button id="btn-end" class="btn btn-ghost">Encerrar</button>
+        </div>
+      </div>
+
+      <div class="progress"><div id="progress-bar" class="progress-bar"></div></div>
+
+      <!-- Sem cartões para hoje -->
+      <div id="study-empty" class="empty-state hidden">
+        <div class="empty-icon">🎉</div>
+        <h2>Tudo em dia por aqui!</h2>
+        <p id="empty-message" class="muted">Você não tem cartões para revisar agora.</p>
+        <div class="row center">
+          <button id="btn-empty-free" class="btn btn-ghost">Praticar todos</button>
+          <button id="btn-empty-add" class="btn btn-ghost">Adicionar cartão</button>
+        </div>
+      </div>
+
+      <!-- Cartão + controles -->
+      <div id="study-area" class="study-area">
+        <div id="flashcard" class="flashcard">
+          <div class="card-inner">
+            <div class="card-face front">
+              <div class="card-label">🇺🇸 INGLÊS</div>
+              <div id="card-front" class="card-text"></div>
+              <button class="speak-btn" data-speak title="Ouvir a frase (R)">
+                <span class="speak-icon">🔊</span> Ouvir frase
+              </button>
+              <div id="card-meta" class="card-meta"></div>
+            </div>
+            <div class="card-face back">
+              <div class="card-label">🇧🇷 PORTUGUÊS</div>
+              <div id="card-back" class="card-text"></div>
+              <button class="speak-btn small" data-speak title="Ouvir a frase em inglês (R)">
+                <span class="speak-icon">🔊</span> Ouvir em inglês
+              </button>
+              <div class="card-meta">Clique na nota abaixo para avaliar</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="controls-front" class="controls">
+          <button id="btn-flip" class="btn btn-primary btn-lg">Mostrar resposta</button>
+        </div>
+
+        <div id="controls-back" class="controls hidden">
+          <button class="rate rate-again" data-rating="again">
+            <span class="rate-name">De novo</span><span id="int-again" class="rate-int"></span><kbd>1</kbd>
+          </button>
+          <button class="rate rate-hard" data-rating="hard">
+            <span class="rate-name">Difícil</span><span id="int-hard" class="rate-int"></span><kbd>2</kbd>
+          </button>
+          <button class="rate rate-good" data-rating="good">
+            <span class="rate-name">Bom</span><span id="int-good" class="rate-int"></span><kbd>3</kbd>
+          </button>
+          <button class="rate rate-easy" data-rating="easy">
+            <span class="rate-name">Fácil</span><span id="int-easy" class="rate-int"></span><kbd>4</kbd>
+          </button>
+        </div>
+
+        <div class="keyboard-hint muted">Espaço = virar / Bom &nbsp;•&nbsp; 1–4 = avaliar &nbsp;•&nbsp; R = ouvir</div>
+      </div>
+
+      <div id="session-summary" class="empty-state hidden"></div>
+    </section>
+
+    <!-- ===================== CARTÕES ===================== -->
+    <section id="screen-cards" class="screen">
+      <div class="section-head">
+        <div>
+          <h2>Seus cartões</h2>
+          <p id="cards-count" class="muted"></p>
+        </div>
+        <div class="row wrap">
+          <input id="card-search" class="input" type="search" placeholder="Buscar frase..." />
+          <button id="btn-new" class="btn btn-primary">+ Novo</button>
+          <button id="btn-import" class="btn btn-ghost">Importar</button>
+          <button id="btn-export" class="btn btn-ghost">Exportar</button>
+        </div>
+      </div>
+      <div id="cards-list" class="cards-list"></div>
+    </section>
+
+    <!-- ===================== ESTATÍSTICAS ===================== -->
+    <section id="screen-stats" class="screen">
+      <h2>Estatísticas</h2>
+      <div id="stat-cards" class="stat-grid"></div>
+      <h3>Últimos 7 dias</h3>
+      <div id="chart" class="chart"></div>
+    </section>
+
+    <!-- ===================== CONFIGURAÇÕES ===================== -->
+    <section id="screen-settings" class="screen">
+      <h2>Configurações</h2>
+      <div class="settings">
+        <div class="setting">
+          <div>
+            <strong>Deck atual</strong>
+            <small id="deck-manage-name">...</small>
+            <small>Cada deck tem seus próprios cartões, estatísticas e pasta de backup.</small>
+            <div class="row wrap" style="margin-top:12px">
+              <button id="deck-new" class="btn btn-primary">+ Novo deck</button>
+              <button id="deck-rename" class="btn btn-ghost">Renomear</button>
+              <button id="btn-deck-import" class="btn btn-ghost">Importar deck</button>
+              <button id="btn-deck-delete" class="btn btn-danger">Excluir deck</button>
+            </div>
+          </div>
+        </div>
+        <label class="setting">
+          <input type="checkbox" id="set-autoplay" />
+          <span><strong>Voz automática</strong><small>Reproduzir a frase em inglês ao mostrá-la.</small></span>
+        </label>
+        <label class="setting">
+          <span><strong>Velocidade da voz</strong><small>Vale para a voz do Google e para a voz de reserva.</small></span>
+          <select id="set-rate" class="input">
+            <option value="0.75">0,75× (lento)</option>
+            <option value="1" selected>1× (normal)</option>
+            <option value="1.25">1,25× (rápido)</option>
+          </select>
+        </label>
+        <label class="setting">
+          <span><strong>Cartões por dia</strong><small>Limite total de cartões por sessão.</small></span>
+          <input id="set-daily" class="input short" type="number" min="1" max="500" />
+        </label>
+        <label class="setting">
+          <span><strong>Cartões novos por dia</strong><small>Quantas frases novas entram na sessão.</small></span>
+          <input id="set-newperday" class="input short" type="number" min="0" max="200" />
+        </label>
+        <label class="setting">
+          <input type="checkbox" id="set-free" />
+          <span><strong>Modo livre</strong><small>Ao iniciar, praticar todos os cartões ignorando as datas.</small></span>
+        </label>
+
+        <div class="setting backup-setting">
+          <div>
+            <strong>Pasta de backup</strong>
+            <small>Neste app a pasta é definida pelo aplicativo, não pelo usuário: <code>Armazenamento interno/Android/data/com.ederproducer.ankiingles/files/Anki</code>. Não há seletor de pasta. Lá ficam os cartões, configurações, estatísticas, uma cópia dos arquivos do app e o MP3 de cada frase em <code>audio/</code>.</small>
+            <small id="backup-status">Preparando pasta de backup...</small>
+            <div class="row wrap" id="backup-actions">
+              <button id="btn-backup-folder" class="btn btn-primary">Escolher pasta</button>
+              <button id="btn-backup-change" class="btn btn-ghost hidden">Mudar pasta</button>
+              <button id="btn-backup-save" class="btn btn-ghost">Salvar agora</button>
+              <button id="btn-backup-restore" class="btn btn-ghost">Restaurar</button>
+              <button id="btn-backup-download" class="btn btn-ghost hidden">Baixar backup (ZIP com áudios)</button>
+              <input type="file" id="backup-file" accept="application/json,.json" class="hidden" />
+            </div>
+          </div>
+        </div>
+
+        <label class="setting" id="backup-auto-row">
+          <input type="checkbox" id="set-auto-backup" />
+          <span><strong>Salvar backup e áudios automaticamente</strong><small>Atualiza o JSON e os MP3s no destino de backup após cada alteração. Com os áudios salvos, o app funciona offline.</small></span>
+        </label>
+
+        <div class="setting">
+          <div>
+            <strong>Voz</strong>
+            <small>Usamos o serviço de texto para fala do Google Tradutor com sotaque americano (<code>en</code>). Se ele falhar, o app usa a voz em <code>en-US</code> do navegador.</small>
+          </div>
+          <button id="btn-test-voice" class="btn btn-ghost">Testar voz</button>
+        </div>
+        <div class="setting danger-setting">
+          <div>
+            <strong>Restaurar deck inicial</strong>
+            <small>Apaga seus cartões e volta às frases de exemplo. Não desfazível.</small>
+          </div>
+          <button id="btn-reset" class="btn btn-danger">Restaurar</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" aria-live="polite"></div>
+  <div id="modal-root"></div>
+
+  <script src="native-bundle.js"></script>
+  <script src="richtext.js"></script>
+  <script src="tts.js"></script>
+  <script src="srs.js"></script>
+  <script src="deck.js"></script>
+  <script src="decks.js"></script>
+  <script src="backup.js"></script>
+  <script src="theme-sync.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

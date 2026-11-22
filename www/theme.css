@@ -1,0 +1,17 @@
+/* Gerado por anki-webapp-theme-sync a partir do tema atual do Omarchy. Não editar à mão. */
+:root {
+  color-scheme: dark;
+
+  --bg: #121212;
+  --surface: #1e1e1e;
+  --surface-2: #090909;
+  --text: #bebebe;
+  --muted: color-mix(in srgb, #bebebe 62%, #121212);
+  --border: color-mix(in srgb, #bebebe 14%, transparent);
+
+  --primary: #e68e0d;
+  --primary-hover: color-mix(in srgb, #e68e0d 78%, #bebebe);
+  --primary-soft: color-mix(in srgb, #e68e0d 18%, transparent);
+
+  --shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}

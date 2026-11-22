@@ -1,0 +1,35 @@
+/* Deck inicial: frases úteis de inglês americano com tradução em português brasileiro. */
+var SEED_DECK = [
+  { front: "How's it going?", back: 'Como vai? Tudo bem?' },
+  { front: 'I am running a little late.', back: 'Estou um pouco atrasado.' },
+  { front: 'Could you give me a hand with this?', back: 'Você pode me dar uma mão com isso?' },
+  { front: "Let's grab a coffee sometime.", back: 'Vamos tomar um café alguma hora.' },
+  { front: "That's not what I meant.", back: 'Não foi isso que eu quis dizer.' },
+  { front: 'Do you mind if I open the window?', back: 'Você se importa se eu abrir a janela?' },
+  { front: "It's been a long day.", back: 'Foi um dia longo.' },
+  { front: "I'll get back to you on that.", back: 'Eu te respondo sobre isso depois.' },
+  { front: 'Sounds good to me.', back: 'Parece bom para mim.' },
+  { front: "I'm not sure yet.", back: 'Ainda não tenho certeza.' },
+  { front: 'Could you say that again, please?', back: 'Você pode repetir isso, por favor?' },
+  { front: "I'm looking forward to it.", back: 'Estou ansioso por isso.' },
+  { front: 'No worries.', back: 'Sem problemas.' },
+  { front: 'Let me think about it.', back: 'Deixa eu pensar sobre isso.' },
+  { front: "I'm on my way.", back: 'Estou a caminho.' },
+  { front: "It doesn't make sense to me.", back: 'Não faz sentido para mim.' },
+  { front: 'Would you like something to drink?', back: 'Você gostaria de algo para beber?' },
+  { front: 'I used to live here.', back: 'Eu costumava morar aqui.' },
+  { front: "I'm getting used to it.", back: 'Estou me acostumando com isso.' },
+  { front: 'By the way, I saw Anna yesterday.', back: 'Aliás, eu vi a Anna ontem.' },
+  { front: "I can't wait to see you.", back: 'Mal posso esperar para te ver.' },
+  { front: 'That reminds me of a story.', back: 'Isso me lembra uma história.' },
+  { front: "Let's call it a day.", back: 'Vamos encerrar por hoje.' },
+  { front: "I'm in.", back: 'Eu topo. / Conta comigo.' },
+  { front: "It's up to you.", back: 'Depende de você.' },
+  { front: 'I had no idea.', back: 'Eu não tinha ideia.' },
+  { front: 'Thanks for letting me know.', back: 'Obrigado por me avisar.' },
+  { front: "I'm gonna head out now.", back: 'Vou sair agora.' },
+  { front: 'Do you have a minute?', back: 'Você tem um minuto?' },
+  { front: 'I appreciate your help.', back: 'Eu agradeço a sua ajuda.' }
+];
+
+if (typeof module !== 'undefined' && module.exports) module.exports = SEED_DECK;
