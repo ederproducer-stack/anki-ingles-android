@@ -1,7 +1,7 @@
 {
-  "version": "1.1.1",
+  "version": "1.1.2",
   "released": "2026-11-22",
-  "notes": "Corrige a largura do modal de atualização em telas pequenas.",
+  "notes": "Assinatura de debug estável, para que o atualizador funcione entre versões.",
   "author": "Eder Oliveira",
   "email": "ederproducer@gmail.com",
   "repository": "https://github.com/ederproducer-stack/anki-ingles-android",

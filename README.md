@@ -7,7 +7,7 @@ Versão **Android** do Anki Inglês. Este é um projeto **separado** da versão 
 (`ederproducer-stack/anki-ingles`): o app original continua rodando normalmente
 no desktop e **não é modificado por aqui**.
 
-APK debug pronto: [v1.1.1](https://github.com/ederproducer-stack/anki-ingles-android/releases/tag/v1.1.1).
+APK debug pronto: [v1.1.2](https://github.com/ederproducer-stack/anki-ingles-android/releases/tag/v1.1.2).
 Código: https://github.com/ederproducer-stack/anki-ingles-android
 
 O webapp (HTML/CSS/JS) é empacotado num WebView com **Capacitor 8**. A camada
@@ -104,6 +104,10 @@ Se preferir buildar sem Docker, abra `android/` no Android Studio e rode
   de instalação ficam em `android/app/src/main/java/.../UpdaterPlugin.java`.
 - `capacitor.config.json` desliga a exigência de gesto do usuário para áudio e
   habilita o `CapacitorHttp`.
+- `android/app/debug.keystore` é a keystore de debug **fixa** (senha `android`).
+  Sem ela, cada build gera uma assinatura diferente e o Android bloqueia a
+  atualização com `INSTALL_FAILED_UPDATE_INCOMPATIBLE`. Quem instalou uma versão
+  anterior a v1.1.2 precisa desinstalar uma vez antes do primeiro update.
 
 ## Estrutura
 
